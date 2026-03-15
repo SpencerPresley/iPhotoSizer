@@ -11,9 +11,16 @@ BYTES_PER_GB = 1024**3
 _SIZE_DECIMAL_PLACES = 2
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-DEFAULT_OUTPUT_FILE = "photos_report.csv"
 OutputFormat = Literal["csv", "json"]
+DEFAULT_OUTPUT_STEM = "photos_report"
+DEFAULT_FORMAT: OutputFormat = "csv"
+DEFAULT_OUTPUT_FILE = f"{DEFAULT_OUTPUT_STEM}.{DEFAULT_FORMAT}"
 SUPPORTED_FORMATS = get_args(OutputFormat)
+
+MEDIA_TYPE_PHOTO = "photo"
+MEDIA_TYPE_VIDEO = "video"
+ICLOUD_STATUS_LOCAL = "local"
+ICLOUD_STATUS_CLOUD_ONLY = "cloud-only"
 
 
 class PhotoRecord(BaseModel):

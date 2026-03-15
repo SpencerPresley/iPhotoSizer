@@ -9,7 +9,14 @@ from flask import Blueprint, current_app, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
 from iphoto_sizer.core import load_photos_db, scan_library
-from iphoto_sizer.models import SUPPORTED_FORMATS, PhotoRecord, format_bytes
+from iphoto_sizer.models import (
+    DEFAULT_FORMAT,
+    DEFAULT_OUTPUT_STEM,
+    MEDIA_TYPE_VIDEO,
+    SUPPORTED_FORMATS,
+    PhotoRecord,
+    format_bytes,
+)
 from iphoto_sizer.writers import FORMAT_WRITERS
 
 _PHOTOSCRIPT_AVAILABLE: bool = importlib.util.find_spec("photoscript") is not None
@@ -25,7 +32,11 @@ bp = Blueprint("web", __name__)
 @bp.route("/")
 def index() -> str:
     """Serve the single-page app shell."""
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        default_filename=DEFAULT_OUTPUT_STEM,
+        default_format=DEFAULT_FORMAT,
+    )
 
 
 @bp.route("/scan", methods=["POST"])
@@ -42,7 +53,7 @@ def scan() -> ResponseReturnValue:
     records, skipped = scan_library(db, min_size_mb=min_size_mb)
 
     total_size_bytes = sum(r.size_bytes for r in records)
-    video_count = sum(1 for r in records if r.media_type == "video")
+    video_count = sum(1 for r in records if r.media_type == MEDIA_TYPE_VIDEO)
     photo_count = len(records) - video_count
 
     return jsonify({
@@ -66,8 +77,8 @@ def formats() -> ResponseReturnValue:
 def export() -> ResponseReturnValue:
     """Save records to disk in the requested format(s)."""
     body: dict[str, Any] = request.get_json(silent=True) or {}
-    fmt: str = str(body.get("format", "csv"))
-    filename: str = str(body.get("filename", "photos_report"))
+    fmt: str = str(body.get("format", DEFAULT_FORMAT))
+    filename: str = str(body.get("filename", DEFAULT_OUTPUT_STEM))
     raw_records: list[dict[str, Any]] = body.get("records", [])
 
     if fmt != "all" and fmt not in SUPPORTED_FORMATS:

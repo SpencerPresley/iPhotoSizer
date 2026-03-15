@@ -7,7 +7,15 @@ from pathlib import Path
 
 import osxphotos
 
-from iphoto_sizer.models import BYTES_PER_MB, PhotoRecord, format_bytes
+from iphoto_sizer.models import (
+    BYTES_PER_MB,
+    ICLOUD_STATUS_CLOUD_ONLY,
+    ICLOUD_STATUS_LOCAL,
+    MEDIA_TYPE_PHOTO,
+    MEDIA_TYPE_VIDEO,
+    PhotoRecord,
+    format_bytes,
+)
 
 _UNKNOWN_FILENAME = "unknown"
 
@@ -73,7 +81,7 @@ def photo_to_record(photo: osxphotos.PhotoInfo) -> PhotoRecord:
     return PhotoRecord(
         filename=filename,
         extension=Path(filename).suffix.lstrip(".").lower(),
-        media_type="video" if photo.ismovie else "photo",
+        media_type=MEDIA_TYPE_VIDEO if photo.ismovie else MEDIA_TYPE_PHOTO,
         size_bytes=size_bytes,
         size=format_bytes(size_bytes),
         # The model's field_validator handles datetime/str/None coercion
@@ -81,7 +89,7 @@ def photo_to_record(photo: osxphotos.PhotoInfo) -> PhotoRecord:
         uuid=str(photo.uuid),
         # ismissing indicates the original file isn't on disk,
         # which typically means it's stored only in iCloud
-        icloud_status="cloud-only" if photo.ismissing else "local",
+        icloud_status=ICLOUD_STATUS_CLOUD_ONLY if photo.ismissing else ICLOUD_STATUS_LOCAL,
     )
 
 

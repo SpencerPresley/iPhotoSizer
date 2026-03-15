@@ -29,6 +29,7 @@ from pathlib import Path
 from iphoto_sizer.core import load_photos_db, scan_library
 from iphoto_sizer.models import (
     BYTES_PER_MB,
+    DEFAULT_FORMAT,
     DEFAULT_OUTPUT_FILE,
     SUPPORTED_FORMATS,
     PhotoRecord,
@@ -74,8 +75,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "-f",
         type=str,
         choices=SUPPORTED_FORMATS,
-        default="csv",
-        help="Output format (default: csv)",
+        default=DEFAULT_FORMAT,
+        help=f"Output format (default: {DEFAULT_FORMAT})",
     )
     parser.add_argument(
         "--web",
