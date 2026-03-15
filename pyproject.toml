@@ -1,6 +1,6 @@
 [project]
 name = "iphoto-sizer"
-version = "0.1.0"
+version = "0.1.1"
 description = "Export and sort Apple Photos library metadata by file size"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -8,6 +8,11 @@ dependencies = [
     "osxphotos~=0.75.6",
     "pydantic~=2.12.5",
 ]
+
+[project.urls]
+Homepage = "https://github.com/SpencerPresley/iPhotoSizer"
+Repository = "https://github.com/SpencerPresley/iPhotoSizer"
+Issues = "https://github.com/SpencerPresley/iPhotoSizer/issues"
 
 [project.optional-dependencies]
 web = ["flask>=3.0"]
