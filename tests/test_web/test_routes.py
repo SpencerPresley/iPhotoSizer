@@ -236,6 +236,17 @@ class TestExportEndpoint:
         assert any("photos_report.csv" in p for p in data["paths"])
 
 
+class TestFormatsEndpoint:
+    def test_returns_supported_formats(self):
+        app = create_app()
+        client = app.test_client()
+        response = client.get("/api/formats")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "csv" in data["formats"]
+        assert "json" in data["formats"]
+
+
 class TestOpenEndpoint:
     def test_open_photo_success(self) -> None:
         app = create_app()

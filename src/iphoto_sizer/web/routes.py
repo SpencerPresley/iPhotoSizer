@@ -67,6 +67,12 @@ def scan() -> ResponseReturnValue:
     })
 
 
+@bp.route("/api/formats")
+def formats() -> ResponseReturnValue:
+    """Return the list of supported export formats."""
+    return jsonify({"formats": list(SUPPORTED_FORMATS)})
+
+
 @bp.route("/export", methods=["POST"])
 def export() -> ResponseReturnValue:
     """Save records to disk in the requested format(s)."""
