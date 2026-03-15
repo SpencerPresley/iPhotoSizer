@@ -15,23 +15,8 @@ from iphoto_sizer.cli import (
     print_summary,
     validate_output_path,
 )
-from iphoto_sizer.models import DEFAULT_OUTPUT_FILE, SUPPORTED_FORMATS, PhotoRecord
-
-
-def _make_record(**overrides: object) -> PhotoRecord:
-    """Create a PhotoRecord with sensible defaults, overriding specific fields."""
-    defaults = {
-        "filename": "IMG_001.jpg",
-        "extension": "jpg",
-        "media_type": "photo",
-        "size_bytes": 1024,
-        "size": "0.00 MB",
-        "creation_date": "2024-01-01 12:00:00",
-        "uuid": "abc-123",
-        "icloud_status": "local",
-    }
-    defaults.update(overrides)
-    return PhotoRecord(**defaults)
+from iphoto_sizer.models import DEFAULT_OUTPUT_FILE, SUPPORTED_FORMATS
+from tests.conftest import make_fake_photo, make_record
 
 
 class TestBuildArgParser:
@@ -156,56 +141,40 @@ class TestPrintSummary:
         assert "No items found" in stderr
 
     def test_displays_total_count(self, capsys):
-        records = [_make_record(size_bytes=i * 100) for i in range(5)]
+        records = [make_record(size_bytes=i * 100) for i in range(5)]
         print_summary(records)
 
         stderr = capsys.readouterr().err
         assert "Total items: 5" in stderr
 
     def test_displays_total_size(self, capsys):
-        records = [_make_record(size_bytes=1024**2)]
+        records = [make_record(size_bytes=1024**2)]
         print_summary(records)
 
         stderr = capsys.readouterr().err
         assert "1.00 MB" in stderr
 
     def test_respects_top_n(self, capsys):
-        records = [_make_record(filename=f"file_{i}.jpg", size_bytes=i * 100) for i in range(20)]
+        records = [make_record(filename=f"file_{i}.jpg", size_bytes=i * 100) for i in range(20)]
         print_summary(records, top_n=3)
 
         stderr = capsys.readouterr().err
         assert "Top 3" in stderr
 
     def test_top_n_capped_to_record_count(self, capsys):
-        records = [_make_record(size_bytes=100)]
+        records = [make_record(size_bytes=100)]
         print_summary(records, top_n=10)
 
         stderr = capsys.readouterr().err
         assert "Top 1" in stderr
 
     def test_output_goes_to_stderr(self, capsys):
-        records = [_make_record()]
+        records = [make_record()]
         print_summary(records)
 
         captured = capsys.readouterr()
         assert captured.out == ""
         assert captured.err != ""
-
-
-def _fake_photo(**overrides: object) -> SimpleNamespace:
-    """Create a fake PhotoInfo-like object for pipeline tests."""
-    from datetime import UTC, datetime
-
-    defaults = {
-        "original_filename": "IMG_001.jpg",
-        "original_filesize": 5_000_000,
-        "ismovie": False,
-        "date": datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC),
-        "uuid": "ABC-123",
-        "ismissing": False,
-    }
-    defaults.update(overrides)
-    return SimpleNamespace(**defaults)
 
 
 class TestRun:
@@ -227,7 +196,7 @@ class TestRun:
 
     def test_produces_csv_output(self, tmp_path: Path):
         output = tmp_path / "report.csv"
-        photos = [_fake_photo(), _fake_photo(original_filename="b.mov", ismovie=True)]
+        photos = [make_fake_photo(), make_fake_photo(original_filename="b.mov", ismovie=True)]
 
         self._run_with_args(["-o", str(output)], photos)
 
@@ -238,7 +207,7 @@ class TestRun:
 
     def test_produces_json_output(self, tmp_path: Path):
         output = tmp_path / "report.json"
-        photos = [_fake_photo()]
+        photos = [make_fake_photo()]
 
         self._run_with_args(["-o", str(output), "-f", "json"], photos)
 
@@ -248,8 +217,8 @@ class TestRun:
     def test_min_size_filters(self, tmp_path: Path):
         output = tmp_path / "report.csv"
         photos = [
-            _fake_photo(original_filesize=100),
-            _fake_photo(original_filename="big.mov", original_filesize=500_000_000),
+            make_fake_photo(original_filesize=100),
+            make_fake_photo(original_filename="big.mov", original_filesize=500_000_000),
         ]
 
         self._run_with_args(["-o", str(output), "--min-size-mb", "100"], photos)
@@ -262,9 +231,9 @@ class TestRun:
     def test_sorts_by_size_descending(self, tmp_path: Path):
         output = tmp_path / "report.csv"
         photos = [
-            _fake_photo(original_filename="small.jpg", original_filesize=100),
-            _fake_photo(original_filename="big.jpg", original_filesize=999_999),
-            _fake_photo(original_filename="mid.jpg", original_filesize=5000),
+            make_fake_photo(original_filename="small.jpg", original_filesize=100),
+            make_fake_photo(original_filename="big.jpg", original_filesize=999_999),
+            make_fake_photo(original_filename="mid.jpg", original_filesize=5000),
         ]
 
         self._run_with_args(["-o", str(output)], photos)
@@ -281,7 +250,7 @@ class TestRun:
 
     def test_skips_bad_photos_and_continues(self, tmp_path: Path, capsys):
         output = tmp_path / "report.csv"
-        good_photo = _fake_photo()
+        good_photo = make_fake_photo()
         # A photo that will raise during conversion
         bad_photo = SimpleNamespace(
             original_filename=None,
@@ -302,7 +271,7 @@ class TestRun:
 
     def test_reports_format_in_output_message(self, tmp_path: Path, capsys):
         output = tmp_path / "report.json"
-        self._run_with_args(["-o", str(output), "-f", "json"], [_fake_photo()])
+        self._run_with_args(["-o", str(output), "-f", "json"], [make_fake_photo()])
 
         stderr = capsys.readouterr().err
         assert "JSON written to" in stderr

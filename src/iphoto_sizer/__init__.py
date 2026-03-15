@@ -1,6 +1,6 @@
 """iphoto-sizer — export Apple Photos library metadata sorted by file size."""
 
-from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record
+from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record, scan_library
 from iphoto_sizer.models import (
     BYTES_PER_GB,
     BYTES_PER_MB,
@@ -27,6 +27,7 @@ __all__ = [
     "format_bytes",
     "load_photos_db",
     "photo_to_record",
+    "scan_library",
     "write_csv",
     "write_json",
 ]

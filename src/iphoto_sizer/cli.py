@@ -26,7 +26,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record
+from iphoto_sizer.core import load_photos_db, scan_library
 from iphoto_sizer.models import (
     BYTES_PER_MB,
     DEFAULT_OUTPUT_FILE,
@@ -210,27 +210,9 @@ def _run() -> None:
     output_path = validate_output_path(args.output)
     db = load_photos_db()
 
-    skipped = 0
-    records: list[PhotoRecord] = []
-    for photo in db.photos():
-        try:
-            records.append(photo_to_record(photo))
-        except Exception as e:
-            # Access uuid cautiously — if the photo object is corrupted,
-            # uuid itself might throw
-            try:
-                photo_id = photo.uuid
-            except Exception:
-                photo_id = "<unknown>"
-            print(f"Warning: skipped photo {photo_id}: {e}", file=sys.stderr)
-            skipped += 1
-
+    records, skipped = scan_library(db, min_size_mb=args.min_size_mb)
     if skipped:
         print(f"Skipped {skipped} item(s) due to errors.", file=sys.stderr)
-
-    threshold: float = args.min_size_mb * BYTES_PER_MB
-    records = apply_filters(records, min_size_bytes=threshold)
-    records.sort(key=lambda r: r.size_bytes, reverse=True)
 
     writer = FORMAT_WRITERS[args.format]
     writer(records, output_path)

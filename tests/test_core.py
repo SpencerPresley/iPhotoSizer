@@ -1,32 +1,19 @@
 """Tests for iphoto_sizer.core."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record
+from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record, scan_library
 from iphoto_sizer.models import PhotoRecord
-
-
-def _fake_photo(**overrides: object) -> SimpleNamespace:
-    """Create a fake osxphotos.PhotoInfo-like object with sensible defaults."""
-    defaults = {
-        "original_filename": "IMG_001.jpg",
-        "original_filesize": 5_000_000,
-        "ismovie": False,
-        "date": datetime(2024, 6, 15, 14, 30, 0),
-        "uuid": "ABC-123-DEF",
-        "ismissing": False,
-    }
-    defaults.update(overrides)
-    return SimpleNamespace(**defaults)
+from tests.conftest import make_fake_photo
 
 
 class TestPhotoToRecord:
     def test_basic_photo(self):
-        photo = _fake_photo()
+        photo = make_fake_photo()
         record = photo_to_record(photo)
 
         assert isinstance(record, PhotoRecord)
@@ -38,57 +25,57 @@ class TestPhotoToRecord:
         assert record.icloud_status == "local"
 
     def test_video(self):
-        photo = _fake_photo(ismovie=True, original_filename="clip.mov")
+        photo = make_fake_photo(ismovie=True, original_filename="clip.mov")
         record = photo_to_record(photo)
 
         assert record.media_type == "video"
         assert record.extension == "mov"
 
     def test_cloud_only(self):
-        photo = _fake_photo(ismissing=True)
+        photo = make_fake_photo(ismissing=True)
         record = photo_to_record(photo)
 
         assert record.icloud_status == "cloud-only"
 
     def test_none_filesize_defaults_to_zero(self):
-        photo = _fake_photo(original_filesize=None)
+        photo = make_fake_photo(original_filesize=None)
         record = photo_to_record(photo)
 
         assert record.size_bytes == 0
 
     def test_none_filename_defaults_to_unknown(self):
-        photo = _fake_photo(original_filename=None)
+        photo = make_fake_photo(original_filename=None)
         record = photo_to_record(photo)
 
         assert record.filename == "unknown"
         assert record.extension == ""
 
     def test_none_date_produces_empty_string(self):
-        photo = _fake_photo(date=None)
+        photo = make_fake_photo(date=None)
         record = photo_to_record(photo)
 
         assert record.creation_date == ""
 
     def test_date_formatted_correctly(self):
-        photo = _fake_photo(date=datetime(2024, 12, 25, 8, 0, 0))
+        photo = make_fake_photo(date=datetime(2024, 12, 25, 8, 0, 0, tzinfo=UTC))
         record = photo_to_record(photo)
 
         assert record.creation_date == "2024-12-25 08:00:00"
 
     def test_extension_is_lowercase(self):
-        photo = _fake_photo(original_filename="photo.HEIC")
+        photo = make_fake_photo(original_filename="photo.HEIC")
         record = photo_to_record(photo)
 
         assert record.extension == "heic"
 
     def test_human_readable_size(self):
-        photo = _fake_photo(original_filesize=1024**3)
+        photo = make_fake_photo(original_filesize=1024**3)
         record = photo_to_record(photo)
 
         assert record.size == "1.00 GB"
 
     def test_negative_filesize_raises(self):
-        photo = _fake_photo(original_filesize=-100)
+        photo = make_fake_photo(original_filesize=-100)
         with pytest.raises(ValueError, match="non-negative"):
             photo_to_record(photo)
 
@@ -149,15 +136,17 @@ class TestApplyFilters:
 
 class TestLoadPhotosDB:
     def test_exits_on_failure(self):
-        with patch("iphoto_sizer.core.osxphotos.PhotosDB", side_effect=RuntimeError("no access")):
+        with patch("iphoto_sizer.core.osxphotos.PhotosDB", side_effect=RuntimeError("no access")), \
+             patch("iphoto_sizer.core.get_terminal_app_name", return_value=None):
             with pytest.raises(SystemExit) as exc_info:
                 load_photos_db()
             assert exc_info.value.code == 1
 
     def test_prints_full_disk_access_hint_on_failure(self, capsys):
-        with patch("iphoto_sizer.core.osxphotos.PhotosDB", side_effect=RuntimeError("no access")):
-            with pytest.raises(SystemExit):
-                load_photos_db()
+        with patch("iphoto_sizer.core.osxphotos.PhotosDB", side_effect=RuntimeError("no access")), \
+             patch("iphoto_sizer.core.get_terminal_app_name", return_value=None), \
+             pytest.raises(SystemExit):
+            load_photos_db()
         stderr = capsys.readouterr().err
         assert "Full Disk Access" in stderr
 
@@ -173,3 +162,56 @@ class TestLoadPhotosDB:
         stderr = capsys.readouterr().err
         assert "Loading Photos library" in stderr
         assert "Library loaded" in stderr
+
+
+class TestScanLibrary:
+    """Tests for the scan_library() pipeline function."""
+
+    @staticmethod
+    def _fake_db(photos: list[SimpleNamespace]) -> SimpleNamespace:
+        """Create a fake PhotosDB whose .photos() returns the given list."""
+        return SimpleNamespace(photos=lambda: photos)
+
+    def test_returns_sorted_records(self):
+        photos = [
+            make_fake_photo(original_filesize=100, uuid="small"),
+            make_fake_photo(original_filesize=5000, uuid="big"),
+            make_fake_photo(original_filesize=1000, uuid="medium"),
+        ]
+        db = self._fake_db(photos)
+
+        records, skipped = scan_library(db)  # type: ignore[arg-type]
+
+        assert skipped == 0
+        assert len(records) == 3
+        # Should be sorted descending by size_bytes
+        assert records[0].size_bytes == 5000
+        assert records[1].size_bytes == 1000
+        assert records[2].size_bytes == 100
+
+    def test_counts_skipped_photos(self):
+        good_photo = make_fake_photo(original_filesize=500, uuid="good")
+        # A photo that will cause photo_to_record to raise (negative size
+        # triggers Pydantic validation error)
+        bad_photo = make_fake_photo(original_filesize=-1, uuid="bad")
+        db = self._fake_db([good_photo, bad_photo])
+
+        records, skipped = scan_library(db)  # type: ignore[arg-type]
+
+        assert skipped == 1
+        assert len(records) == 1
+        assert records[0].uuid == "good"
+
+    def test_applies_min_size_filter(self):
+        photos = [
+            make_fake_photo(original_filesize=500_000, uuid="small"),
+            make_fake_photo(original_filesize=2_000_000, uuid="big"),
+        ]
+        db = self._fake_db(photos)
+
+        # 1 MB = 1024**2 = 1_048_576, so min_size_mb=1 should exclude the 500k item
+        records, skipped = scan_library(db, min_size_mb=1)  # type: ignore[arg-type]
+
+        assert skipped == 0
+        assert len(records) == 1
+        assert records[0].uuid == "big"

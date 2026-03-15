@@ -8,8 +8,8 @@ from typing import Any, cast
 from flask import Blueprint, current_app, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
-from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record
-from iphoto_sizer.models import BYTES_PER_MB, SUPPORTED_FORMATS, PhotoRecord, format_bytes
+from iphoto_sizer.core import load_photos_db, scan_library
+from iphoto_sizer.models import SUPPORTED_FORMATS, PhotoRecord, format_bytes
 from iphoto_sizer.writers import FORMAT_WRITERS
 
 _PHOTOSCRIPT_AVAILABLE: bool = importlib.util.find_spec("photoscript") is not None
@@ -39,18 +39,7 @@ def scan() -> ResponseReturnValue:
     body: dict[str, Any] = request.get_json(silent=True) or {}
     min_size_mb: float = float(body.get("min_size_mb", 0.0))
 
-    skipped = 0
-    records: list[PhotoRecord] = []
-    for photo in db.photos():
-        try:
-            records.append(photo_to_record(photo))
-        except Exception:
-            skipped += 1
-
-    if min_size_mb > 0:
-        records = apply_filters(records, min_size_bytes=min_size_mb * BYTES_PER_MB)
-
-    records.sort(key=lambda r: r.size_bytes, reverse=True)
+    records, skipped = scan_library(db, min_size_mb=min_size_mb)
 
     total_size_bytes = sum(r.size_bytes for r in records)
     video_count = sum(1 for r in records if r.media_type == "video")
