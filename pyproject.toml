@@ -1,5 +1,5 @@
 [project]
-name = "icloud-file-sorter"
+name = "iphoto-sizer"
 version = "0.1.0"
 description = "Export and sort Apple Photos library metadata by file size"
 readme = "README.md"
@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-photos-export = "icloud_file_sorter.photos_export:main"
+iphoto-sizer = "iphoto_sizer.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]
@@ -82,6 +82,8 @@ ignore-var-parameters = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "S", "PLR2004", "ARG", "PT", "T201", "FBT", "SLF001", "PLC0415"]
+"**/cli.py" = ["T201"]  # CLI tool — print to stderr is intentional
+"**/core.py" = ["T201"]  # load_photos_db prints status to stderr
 
 [tool.pyright]
 include = ["."]
