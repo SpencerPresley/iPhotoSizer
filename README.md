@@ -2,7 +2,13 @@
 
 Exports metadata from your macOS Apple Photos library to CSV or JSON, sorted by file size (largest first). Useful for finding what's eating your iCloud storage.
 
-Each record includes: filename, extension, media type (photo/video), size in bytes, human-readable size, creation date, UUID, and iCloud sync status (local vs cloud-only).
+Includes an optional web UI for browsing, filtering, and exporting results from your browser.
+
+## Screenshots
+
+| Landing Page | Scan Results |
+|---|---|
+| ![Landing page](images/home.png) | ![Scan results](images/scan-results.png) |
 
 ## Prerequisites
 
@@ -12,21 +18,36 @@ Each record includes: filename, extension, media type (photo/video), size in byt
 
 ## Install
 
+From PyPI:
+
 ```bash
-# Clone and install with uv
-git clone https://github.com/spencerpresley/iPhotoSizer.git && cd iPhotoSizer
-uv sync
+pip install iphoto-sizer
 ```
 
-Or install with pip:
+With the optional web UI:
 
 ```bash
-pip install .
+pip install iphoto-sizer[web]
+```
+
+Or with uv:
+
+```bash
+uv tool install iphoto-sizer        # CLI only
+uv tool install iphoto-sizer[web]   # CLI + web UI
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/spencerpresley/iPhotoSizer.git && cd iPhotoSizer
+uv sync              # CLI only
+uv sync --extra web  # CLI + web UI
 ```
 
 ## Usage
 
-After installing, an `iphoto-sizer` CLI command is available:
+### CLI
 
 ```bash
 # Export everything to photos_report.csv in the current directory
@@ -51,6 +72,20 @@ You can also run it as a module:
 python -m iphoto_sizer
 ```
 
+### Web UI
+
+```bash
+iphoto-sizer --web
+```
+
+Opens a local web server in your browser where you can:
+
+- Run a new scan or open an existing JSON report
+- Browse all items with sorting, filtering, and search
+- View summary stats (total size, item counts, video/photo breakdown)
+- Export results to CSV, JSON, or both
+- Open individual photos directly in Photos.app (experimental)
+
 ## CLI Options
 
 | Flag | Description | Default |
@@ -59,36 +94,6 @@ python -m iphoto_sizer
 | `-o`, `--output` | Output file path | `photos_report.csv` |
 | `-f`, `--format` | Output format: `csv` or `json` | `csv` |
 | `--web` | Launch the web UI in a browser | off |
-
-## Web UI
-
-An optional browser-based interface for browsing and filtering your library.
-
-### Install
-
-```bash
-pip install iphoto-sizer[web]
-```
-
-Or with uv:
-
-```bash
-uv sync --extra web
-```
-
-### Usage
-
-```bash
-iphoto-sizer --web
-```
-
-Opens a local web server in your browser. From there you can run a new scan, open an existing report, export results, and open individual photos in Photos.app.
-
-The web UI provides:
-- Summary stats (total items, total size, video/photo breakdown)
-- Sortable, filterable browsing of all library items
-- Export to CSV, JSON, or both from the browser
-- Open individual photos directly in Photos.app (experimental)
 
 ## Output
 
@@ -104,6 +109,7 @@ A summary of total items, total size, and the 10 largest files is printed to std
 
 ## Notes
 
-- Initial library load takes 15-20 seconds on large libraries.
+- Full Disk Access is required because the tool reads the Photos library's SQLite database directly (via [osxphotos](https://github.com/RhetTbull/osxphotos)). Grant it to your terminal app in System Settings > Privacy & Security > Full Disk Access.
+- Initial library load typically takes 5-20 seconds depending on library size.
 - Photos that fail to parse are skipped with a warning; they don't stop the export.
 - The tool checks for at least 50 MB of free disk space before writing.
