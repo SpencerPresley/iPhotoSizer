@@ -37,6 +37,7 @@ from iphoto_sizer.models import (
 )
 from iphoto_sizer.writers import FORMAT_WRITERS
 
+_EXIT_CODE_ERROR = 1
 _EXIT_CODE_INTERRUPTED = 130
 _MIN_FREE_DISK_SPACE_MB = 50
 
@@ -111,7 +112,7 @@ def validate_output_path(output_path: str) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         print(f"Cannot create output directory {path.parent}: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(_EXIT_CODE_ERROR)
 
     if path.exists():
         print(f"Note: overwriting existing file {path}", file=sys.stderr)
@@ -133,7 +134,7 @@ def validate_output_path(output_path: str) -> Path:
             f"need at least {format_bytes(min_free_bytes)}",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(_EXIT_CODE_ERROR)
 
     return path
 
@@ -194,7 +195,7 @@ def _run() -> None:
 
     if args.min_size_mb < 0:
         print("Error: --min-size-mb cannot be negative", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(_EXIT_CODE_ERROR)
 
     if args.web:
         try:
@@ -205,7 +206,7 @@ def _run() -> None:
                 "Install it with: pip install iphoto-sizer[web]",
                 file=sys.stderr,
             )
-            sys.exit(1)
+            sys.exit(_EXIT_CODE_ERROR)
         return
 
     output_path = validate_output_path(args.output)

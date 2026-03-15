@@ -18,6 +18,7 @@ from iphoto_sizer.models import (
 )
 
 _UNKNOWN_FILENAME = "unknown"
+_EXIT_CODE_ERROR = 1
 
 
 def get_terminal_app_name() -> str | None:
@@ -119,7 +120,7 @@ def load_photos_db() -> osxphotos.PhotosDB:
             "System Settings > Privacy & Security > Full Disk Access",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(_EXIT_CODE_ERROR)
     print("Library loaded.", file=sys.stderr)
     return db
 
