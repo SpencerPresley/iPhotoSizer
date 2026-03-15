@@ -1,0 +1,100 @@
+[project]
+name = "icloud-file-sorter"
+version = "0.1.0"
+description = "Export and sort Apple Photos library metadata by file size"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "osxphotos~=0.75.6",
+    "pydantic~=2.12.5",
+]
+
+[project.scripts]
+photos-export = "icloud_file_sorter.photos_export:main"
+
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  # Conflicts with formatter
+  "COM812",
+  "ISC001",
+
+  # Docstrings - too strict
+  "D100", # Missing docstring in public module
+  "D104", # Missing docstring in public package
+  "D107", # Missing docstring in __init__
+
+  # Annoying / not useful
+  "C90",    # McCabe complexity
+  "CPY",    # Copyright headers
+  "FIX002", # Line contains TODO
+  "PLR09",  # Too many arguments/statements/etc
+  "TD002",  # Missing author in TODO
+  "TD003",  # Missing issue link for TODO
+  "FBT",    # Boolean trap - internal APIs are fine
+  "PLW0603", # Global statement - config module pattern
+
+  # Doesn't play well with Pydantic
+  "RUF012", # Mutable class attrs
+  "TC001",  # Move import into TYPE_CHECKING
+  "TC002",  # Move import into TYPE_CHECKING
+  "TC003",  # Move import into TYPE_CHECKING
+
+  # May want to revisit
+  "BLE", # Blind exceptions
+]
+unfixable = [
+  "B028",    # warnings.warn() stacklevel - think about it
+  "PLW1510", # subprocess.run() check param - be explicit
+]
+fixable = ["ALL"]
+
+# Pydantic-friendly settings
+flake8-annotations.allow-star-arg-any = true
+flake8-annotations.mypy-init-return = true
+flake8-builtins.ignorelist = ["id", "type", "input"]
+flake8-type-checking.runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+ignore-var-parameters = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "S", "PLR2004", "ARG", "PT", "T201", "FBT", "SLF001", "PLC0415"]
+
+[tool.pyright]
+include = ["."]
+exclude = ["**/__pycache__", ".venv", "**/.venv", "output"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+
+venvPath = "."
+venv = ".venv"
+
+reportUnusedCallResult = "none"
+reportMissingTypeStubs = "none"
+reportPrivateUsage = "none"
+reportUnknownMemberType = "none"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportMissingTypeArgument = "none"
