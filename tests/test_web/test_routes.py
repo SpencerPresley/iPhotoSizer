@@ -1,11 +1,26 @@
 """Tests for iphoto_sizer.web routes."""
 
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from iphoto_sizer.web import create_app
+
+
+def _fake_photo(**overrides: object) -> SimpleNamespace:
+    defaults = {
+        "original_filename": "IMG_001.jpg",
+        "original_filesize": 5_000_000,
+        "ismovie": False,
+        "date": datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC),
+        "uuid": "ABC-123",
+        "ismissing": False,
+    }
+    defaults.update(overrides)
+    return SimpleNamespace(**defaults)
 
 
 class TestAppFactory:
@@ -66,3 +81,67 @@ class TestServeWeb:
             serve_web()
         stderr = capsys.readouterr().err
         assert "Web UI running at http://localhost:8501" in stderr
+
+
+class TestScanEndpoint:
+    def test_scan_returns_json(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        mock_db = MagicMock()
+        mock_db.photos.return_value = [_fake_photo()]
+        with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
+            response = client.post("/scan", json={})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "records" in data
+        assert "total_count" in data
+        assert "skipped_count" in data
+
+    def test_scan_with_min_size_filter(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        mock_db = MagicMock()
+        mock_db.photos.return_value = [
+            _fake_photo(original_filesize=100),
+            _fake_photo(original_filename="big.mov", original_filesize=500_000_000),
+        ]
+        with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
+            response = client.post("/scan", json={"min_size_mb": 100})
+        data = response.get_json()
+        assert data["total_count"] == 1
+
+    def test_scan_returns_sorted_descending(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        mock_db = MagicMock()
+        mock_db.photos.return_value = [
+            _fake_photo(original_filename="small.jpg", original_filesize=100),
+            _fake_photo(original_filename="big.jpg", original_filesize=999_999),
+        ]
+        with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
+            response = client.post("/scan", json={})
+        records = response.get_json()["records"]
+        assert records[0]["filename"] == "big.jpg"
+
+    def test_scan_includes_summary_stats(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        mock_db = MagicMock()
+        mock_db.photos.return_value = [
+            _fake_photo(ismovie=False, original_filesize=100),
+            _fake_photo(ismovie=True, original_filesize=200),
+        ]
+        with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
+            response = client.post("/scan", json={})
+        data = response.get_json()
+        assert data["photo_count"] == 1
+        assert data["video_count"] == 1
+        assert data["total_size_bytes"] == 300
+        assert "total_size" in data
+
+    def test_scan_handles_db_failure(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        with patch("iphoto_sizer.web.routes.load_photos_db", side_effect=SystemExit(1)):
+            response = client.post("/scan", json={})
+        assert response.status_code == 500
