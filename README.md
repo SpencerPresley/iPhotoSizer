@@ -84,6 +84,12 @@ iphoto-sizer --web
 
 Opens a local web server in your browser. From there you can run a new scan, open an existing report, export results, and open individual photos in Photos.app.
 
+The web UI provides:
+- Summary stats (total items, total size, video/photo breakdown)
+- Sortable, filterable browsing of all library items
+- Export to CSV, JSON, or both from the browser
+- Open individual photos directly in Photos.app (experimental)
+
 ## Output
 
 **CSV columns / JSON fields:**
