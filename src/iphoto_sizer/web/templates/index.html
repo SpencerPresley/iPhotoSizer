@@ -1,5 +1,193 @@
 <!DOCTYPE html>
-<html>
-<head><title>iphoto-sizer</title></head>
-<body><h1>iphoto-sizer</h1><p>Placeholder</p></body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iphoto-sizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="app-header">
+    <div class="app-container">
+      <a href="/" class="logo">
+        <span class="logo-icon">&#x1F4F7;</span>
+        <span>iphoto-sizer</span>
+      </a>
+      <div class="header-actions" id="header-actions" style="display:none;">
+        <button class="btn btn-ghost btn-sm" id="btn-new-scan">&#x2190; New scan</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Error Banner ===== -->
+  <div class="app-container">
+    <div class="error-banner" id="error-banner">
+      <span>&#x26A0;</span>
+      <span id="error-banner-text"></span>
+    </div>
+  </div>
+
+  <!-- ===== Landing View ===== -->
+  <div class="view active" id="view-landing">
+    <div class="app-container">
+      <div class="landing">
+        <div class="landing-hero">
+          <h1>What's eating your iCloud?</h1>
+          <p>Scan your Photos library to find the largest files, browse results, and export reports.</p>
+        </div>
+
+        <div class="landing-options">
+          <!-- Scan card -->
+          <div class="option-card">
+            <div class="option-icon scan">&#x1F50D;</div>
+            <h3>Run new scan</h3>
+            <p>Scan your Apple Photos library and sort by file size.</p>
+            <div class="input-group">
+              <input
+                type="number"
+                class="input-field"
+                id="input-min-size"
+                placeholder="Min size (MB)"
+                min="0"
+                step="any"
+              >
+            </div>
+            <button class="btn btn-primary" id="btn-scan">Scan Library</button>
+          </div>
+
+          <!-- Open file card -->
+          <div class="option-card">
+            <div class="option-icon open">&#x1F4C2;</div>
+            <h3>Open existing report</h3>
+            <p>Load a previously exported JSON report file.</p>
+            <div class="file-input-wrapper">
+              <label class="file-input-label" id="file-label" for="file-input">
+                Choose .json file
+              </label>
+              <input type="file" id="file-input" accept=".json,application/json">
+            </div>
+            <button class="btn btn-secondary" id="btn-open-file" disabled>Load Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Scanning View ===== -->
+  <div class="view" id="view-scanning">
+    <div class="app-container">
+      <div class="scanning">
+        <div class="spinner"></div>
+        <h2>Scanning library&hellip;</h2>
+        <p>Reading your Photos database. This may take a moment for large libraries.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Results View ===== -->
+  <div class="view" id="view-results">
+    <div class="app-container">
+
+      <!-- Stats bar -->
+      <div class="stats-bar" id="stats-bar"></div>
+
+      <!-- Toolbar -->
+      <div class="results-toolbar">
+        <div class="results-toolbar-left">
+          <input
+            type="search"
+            class="input-field search-input"
+            id="search-input"
+            placeholder="Search files..."
+          >
+          <div class="filter-chips">
+            <button class="chip active" id="chip-all">All</button>
+            <button class="chip" id="chip-photos">Photos</button>
+            <button class="chip" id="chip-videos">Videos</button>
+          </div>
+        </div>
+        <div class="results-toolbar-right">
+          <button class="btn btn-primary btn-sm" id="btn-export">&#x2B07; Export</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <div class="table-footer-info">
+            <span id="table-footer-info">0 items</span>
+            <label>
+              <select class="per-page-select" id="per-page-select">
+                <option value="25">25 / page</option>
+                <option value="50" selected>50 / page</option>
+                <option value="100">100 / page</option>
+                <option value="250">250 / page</option>
+              </select>
+            </label>
+          </div>
+          <div class="pagination">
+            <button id="page-prev" disabled>&laquo; Prev</button>
+            <span class="page-info" id="page-info">1 / 1</span>
+            <button id="page-next" disabled>Next &raquo;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== Export Modal ===== -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h3>Export Report</h3>
+      <div class="modal-field">
+        <label>Format</label>
+        <div class="format-options" id="modal-formats">
+          <button class="format-option selected" data-format="csv">CSV</button>
+          <button class="format-option" data-format="json">JSON</button>
+          <button class="format-option" data-format="all">ALL</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label for="export-filename">Filename</label>
+        <input type="text" class="input-field" id="export-filename" value="photos_report" placeholder="photos_report">
+      </div>
+      <div class="export-feedback" id="export-feedback"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-export">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-export">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+  <!-- Show/hide header actions based on view -->
+  <script>
+    (function() {
+      var headerActions = document.getElementById('header-actions');
+      var observer = new MutationObserver(function() {
+        var resultsActive = document.getElementById('view-results').classList.contains('active');
+        headerActions.style.display = resultsActive ? 'flex' : 'none';
+      });
+      observer.observe(document.getElementById('view-landing'), { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.getElementById('view-results'), { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.getElementById('view-scanning'), { attributes: true, attributeFilter: ['class'] });
+    })();
+  </script>
+</body>
 </html>
