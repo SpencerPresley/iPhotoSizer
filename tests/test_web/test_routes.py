@@ -275,3 +275,66 @@ class TestOpenEndpoint:
         data = response.get_json()
         assert data["success"] is False
         assert "photoscript" in data["error"].lower()
+
+
+class TestFullPipeline:
+    def test_scan_then_export(self, tmp_path: Path) -> None:
+        """Full flow: scan the library, then export the results."""
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+
+        mock_db = MagicMock()
+        mock_db.photos.return_value = [
+            _fake_photo(original_filename="big.mov", original_filesize=1_000_000, ismovie=True),
+            _fake_photo(original_filename="small.jpg", original_filesize=100),
+        ]
+
+        # Step 1: Scan
+        with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
+            scan_response = client.post("/scan", json={})
+        assert scan_response.status_code == 200
+        scan_data = scan_response.get_json()
+        assert scan_data["total_count"] == 2
+
+        # Step 2: Export the scan results
+        export_response = client.post("/export", json={
+            "records": scan_data["records"],
+            "format": "csv",
+            "filename": "test_export",
+        })
+        assert export_response.status_code == 200
+        paths = export_response.get_json()["paths"]
+        assert len(paths) == 1
+        assert Path(paths[0]).exists()
+
+    def test_open_existing_then_export(self, tmp_path: Path) -> None:
+        """Simulate the 'Open existing report' flow: records come from client, not from /scan."""
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+
+        # Records loaded client-side (not from /scan), sent directly to /export
+        client_records = [
+            _fake_photo_record_dict(),
+            {
+                "filename": "video.mov",
+                "extension": "mov",
+                "media_type": "video",
+                "size_bytes": 500_000,
+                "size": "0.48 MB",
+                "creation_date": "2024-03-01 10:00:00",
+                "uuid": "XYZ-789",
+                "icloud_status": "cloud-only",
+            },
+        ]
+
+        response = client.post("/export", json={
+            "records": client_records,
+            "format": "json",
+            "filename": "reopened_report",
+        })
+        assert response.status_code == 200
+        paths = response.get_json()["paths"]
+        assert len(paths) == 1
+        assert Path(paths[0]).exists()
