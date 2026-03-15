@@ -32,10 +32,9 @@ from iphoto_sizer.models import (
     DEFAULT_OUTPUT_FILE,
     SUPPORTED_FORMATS,
     PhotoRecord,
-    RecordWriter,
     format_bytes,
 )
-from iphoto_sizer.writers import write_csv, write_json
+from iphoto_sizer.writers import FORMAT_WRITERS
 
 _EXIT_CODE_INTERRUPTED = 130
 _MIN_FREE_DISK_SPACE_MB = 50
@@ -233,11 +232,7 @@ def _run() -> None:
     records = apply_filters(records, min_size_bytes=threshold)
     records.sort(key=lambda r: r.size_bytes, reverse=True)
 
-    writers: dict[str, RecordWriter] = {
-        "csv": write_csv,
-        "json": write_json,
-    }
-    writer = writers[args.format]
+    writer = FORMAT_WRITERS[args.format]
     writer(records, output_path)
     print(f"{args.format.upper()} written to {output_path}", file=sys.stderr)
     print_summary(records)

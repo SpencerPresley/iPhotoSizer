@@ -1,12 +1,14 @@
 """Route handlers for the web UI."""
 
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
 from iphoto_sizer.core import apply_filters, load_photos_db, photo_to_record
-from iphoto_sizer.models import BYTES_PER_MB, PhotoRecord, format_bytes
+from iphoto_sizer.models import BYTES_PER_MB, SUPPORTED_FORMATS, PhotoRecord, format_bytes
+from iphoto_sizer.writers import FORMAT_WRITERS
 
 bp = Blueprint("web", __name__)
 
@@ -54,3 +56,32 @@ def scan() -> ResponseReturnValue:
         "video_count": video_count,
         "photo_count": photo_count,
     })
+
+
+@bp.route("/export", methods=["POST"])
+def export() -> ResponseReturnValue:
+    """Save records to disk in the requested format(s)."""
+    body: dict[str, Any] = request.get_json(silent=True) or {}
+    fmt: str = str(body.get("format", "csv"))
+    filename: str = str(body.get("filename", "photos_report"))
+    raw_records: list[dict[str, Any]] = body.get("records", [])
+
+    if fmt != "all" and fmt not in SUPPORTED_FORMATS:
+        return jsonify({"error": f"Unsupported format: {fmt}"}), 400
+
+    records = [PhotoRecord(**r) for r in raw_records]
+
+    formats = list(SUPPORTED_FORMATS) if fmt == "all" else [fmt]
+    export_dir = Path(cast("str", current_app.config.get("EXPORT_DIR", ".")))
+    paths: list[str] = []
+
+    try:
+        for f in formats:
+            output_path = export_dir / f"{filename}.{f}"
+            writer = FORMAT_WRITERS[f]
+            writer(records, output_path)
+            paths.append(str(output_path.resolve()))
+    except OSError as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"paths": paths})

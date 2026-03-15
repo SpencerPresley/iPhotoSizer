@@ -145,3 +145,92 @@ class TestScanEndpoint:
         with patch("iphoto_sizer.web.routes.load_photos_db", side_effect=SystemExit(1)):
             response = client.post("/scan", json={})
         assert response.status_code == 500
+
+
+def _fake_photo_record_dict() -> dict[str, object]:
+    return {
+        "filename": "IMG_001.jpg",
+        "extension": "jpg",
+        "media_type": "photo",
+        "size_bytes": 1024,
+        "size": "0.00 MB",
+        "creation_date": "2024-01-01 12:00:00",
+        "uuid": "abc-123",
+        "icloud_status": "local",
+    }
+
+
+class TestExportEndpoint:
+    def test_export_csv(self, tmp_path: Path) -> None:
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+        records = [_fake_photo_record_dict()]
+        response = client.post("/export", json={
+            "records": records,
+            "format": "csv",
+            "filename": "test_report",
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "paths" in data
+        assert any("test_report.csv" in p for p in data["paths"])
+
+    def test_export_json(self, tmp_path: Path) -> None:
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+        records = [_fake_photo_record_dict()]
+        response = client.post("/export", json={
+            "records": records,
+            "format": "json",
+            "filename": "test_report",
+        })
+        data = response.get_json()
+        assert any("test_report.json" in p for p in data["paths"])
+
+    def test_export_all_formats(self, tmp_path: Path) -> None:
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+        records = [_fake_photo_record_dict()]
+        response = client.post("/export", json={
+            "records": records,
+            "format": "all",
+            "filename": "test_report",
+        })
+        data = response.get_json()
+        assert len(data["paths"]) == 2  # csv and json
+
+    def test_export_invalid_format(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        response = client.post("/export", json={
+            "records": [],
+            "format": "xml",
+            "filename": "test",
+        })
+        assert response.status_code == 400
+
+    def test_export_empty_records(self, tmp_path: Path) -> None:
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+        response = client.post("/export", json={
+            "records": [],
+            "format": "csv",
+            "filename": "empty",
+        })
+        assert response.status_code == 200
+
+    def test_export_defaults(self, tmp_path: Path) -> None:
+        """Missing format/filename fields use defaults."""
+        app = create_app()
+        app.config["EXPORT_DIR"] = str(tmp_path)
+        client = app.test_client()
+        response = client.post("/export", json={
+            "records": [_fake_photo_record_dict()],
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert any("photos_report.csv" in p for p in data["paths"])

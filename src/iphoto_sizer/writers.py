@@ -4,7 +4,7 @@ import csv
 import json
 from pathlib import Path
 
-from iphoto_sizer.models import CSV_COLUMNS, PhotoRecord
+from iphoto_sizer.models import CSV_COLUMNS, PhotoRecord, RecordWriter
 
 _JSON_INDENT = 4
 
@@ -32,3 +32,9 @@ def write_json(records: list[PhotoRecord], output_path: Path) -> None:
     """
     with output_path.open("w") as f:
         json.dump([record.model_dump() for record in records], f, indent=_JSON_INDENT)
+
+
+FORMAT_WRITERS: dict[str, RecordWriter] = {
+    "csv": write_csv,
+    "json": write_json,
+}
