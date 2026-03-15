@@ -234,3 +234,33 @@ class TestExportEndpoint:
         assert response.status_code == 200
         data = response.get_json()
         assert any("photos_report.csv" in p for p in data["paths"])
+
+
+class TestOpenEndpoint:
+    def test_open_photo_success(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        with patch("iphoto_sizer.web.routes._open_in_photos") as mock_open:
+            mock_open.return_value = None
+            response = client.post("/open/ABC-123-DEF")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+
+    def test_open_photo_failure(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        with patch("iphoto_sizer.web.routes._open_in_photos", side_effect=Exception("not found")):
+            response = client.post("/open/ABC-123-DEF")
+        data = response.get_json()
+        assert data["success"] is False
+        assert "error" in data
+
+    def test_open_photo_no_photoscript(self) -> None:
+        app = create_app()
+        client = app.test_client()
+        with patch("iphoto_sizer.web.routes._PHOTOSCRIPT_AVAILABLE", False):
+            response = client.post("/open/ABC-123-DEF")
+        data = response.get_json()
+        assert data["success"] is False
+        assert "photoscript" in data["error"].lower()
