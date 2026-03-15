@@ -47,6 +47,8 @@ uv sync --extra web  # CLI + web UI
 
 ## Usage
 
+If you installed with `pip install` or `uv tool install`, the `iphoto-sizer` command is available globally. If you installed from source with `uv sync`, prefix commands with `uv run` (e.g., `uv run iphoto-sizer`).
+
 ### CLI
 
 ```bash
@@ -64,12 +66,6 @@ iphoto-sizer -f json -o ~/Desktop/photos.json
 
 # Combine options
 iphoto-sizer --min-size-mb 500 -f json -o ~/Desktop/big_ones.json
-```
-
-You can also run it as a module:
-
-```bash
-python -m iphoto_sizer
 ```
 
 ### Web UI
