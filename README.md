@@ -58,6 +58,31 @@ python -m iphoto_sizer
 | `--min-size-mb` | Only include items at or above this size (MB) | `0` (all items) |
 | `-o`, `--output` | Output file path | `photos_report.csv` |
 | `-f`, `--format` | Output format: `csv` or `json` | `csv` |
+| `--web` | Launch the web UI in a browser | off |
+
+## Web UI
+
+An optional browser-based interface for browsing and filtering your library.
+
+### Install
+
+```bash
+pip install iphoto-sizer[web]
+```
+
+Or with uv:
+
+```bash
+uv sync --extra web
+```
+
+### Usage
+
+```bash
+iphoto-sizer --web
+```
+
+Opens a local web server in your browser. From there you can run a new scan, open an existing report, export results, and open individual photos in Photos.app.
 
 ## Output
 
