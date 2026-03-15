@@ -35,12 +35,14 @@ def serve_web() -> None:
     url = f"http://localhost:{port}"
     print(f"Web UI running at {url} — press Ctrl+C to stop", file=sys.stderr)
 
-    threading.Timer(0.5, webbrowser.open, args=[url]).start()
+    timer = threading.Timer(0.5, webbrowser.open, args=[url])
+    timer.start()
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        timer.cancel()
         server.shutdown()
         print("\nServer stopped.", file=sys.stderr)

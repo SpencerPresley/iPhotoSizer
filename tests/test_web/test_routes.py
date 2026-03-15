@@ -3,6 +3,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from iphoto_sizer.web import create_app
 
 
@@ -52,7 +54,7 @@ class TestServeWeb:
         assert mock_make.call_args[0][0] == "127.0.0.1"
         assert mock_make.call_args[0][1] == 0  # port 0 for auto-assign
 
-    def test_serve_web_prints_url_to_stderr(self, capsys: object) -> None:
+    def test_serve_web_prints_url_to_stderr(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify the URL with actual port is printed to stderr."""
         mock_server = self._mock_make_server()
         with (
@@ -62,5 +64,5 @@ class TestServeWeb:
             from iphoto_sizer.web import serve_web
 
             serve_web()
-        stderr = capsys.readouterr().err  # type: ignore[union-attr]
+        stderr = capsys.readouterr().err
         assert "Web UI running at http://localhost:8501" in stderr
