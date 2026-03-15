@@ -6,3 +6,6 @@ dist/
 output/
 .coverage
 .pytest_cache/
+.superpowers/
+photos_report.csv
+photos_report.json
