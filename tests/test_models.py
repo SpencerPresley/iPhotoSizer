@@ -1,6 +1,6 @@
 """Tests for iphoto_sizer.models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -108,7 +108,7 @@ class TestPhotoRecord:
             )
 
     def test_creation_date_coerces_datetime(self):
-        dt = datetime(2024, 6, 15, 14, 30, 0)
+        dt = datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC)
         record = PhotoRecord(
             filename="test.jpg",
             extension="jpg",
@@ -164,7 +164,7 @@ class TestPhotoRecord:
 
 class TestCSVColumns:
     def test_columns_match_model_fields(self):
-        assert CSV_COLUMNS == tuple(PhotoRecord.model_fields.keys())
+        assert tuple(PhotoRecord.model_fields.keys()) == CSV_COLUMNS
 
     def test_expected_columns_present(self):
         expected = {"filename", "extension", "media_type", "size_bytes", "size",
