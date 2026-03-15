@@ -1,4 +1,4 @@
-# icloud-file-sorter
+# iphoto-sizer
 
 Exports metadata from your macOS Apple Photos library to CSV or JSON, sorted by file size (largest first). Useful for finding what's eating your iCloud storage.
 
@@ -14,7 +14,7 @@ Each record includes: filename, extension, media type (photo/video), size in byt
 
 ```bash
 # Clone and install with uv
-git clone <repo-url> && cd icloud-file-sorter
+git clone https://github.com/spencerpresley/iPhotoSizer.git && cd iPhotoSizer
 uv sync
 ```
 
@@ -26,29 +26,29 @@ pip install .
 
 ## Usage
 
-After installing, a `photos-export` CLI command is available:
+After installing, an `iphoto-sizer` CLI command is available:
 
 ```bash
-# Export everything to output/photos_report.csv
-photos-export
+# Export everything to photos_report.csv in the current directory
+iphoto-sizer
 
 # Only items larger than 100 MB
-photos-export --min-size-mb 100
+iphoto-sizer --min-size-mb 100
 
 # Write to a specific path
-photos-export -o ~/Desktop/large_files.csv
+iphoto-sizer -o ~/Desktop/large_files.csv
 
 # Export as JSON instead of CSV
-photos-export -f json -o ~/Desktop/photos.json
+iphoto-sizer -f json -o ~/Desktop/photos.json
 
 # Combine options
-photos-export --min-size-mb 500 -f json -o ~/Desktop/big_ones.json
+iphoto-sizer --min-size-mb 500 -f json -o ~/Desktop/big_ones.json
 ```
 
 You can also run it as a module:
 
 ```bash
-python -m icloud_file_sorter
+python -m iphoto_sizer
 ```
 
 ## CLI Options
@@ -56,7 +56,7 @@ python -m icloud_file_sorter
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--min-size-mb` | Only include items at or above this size (MB) | `0` (all items) |
-| `-o`, `--output` | Output file path | `output/photos_report.csv` |
+| `-o`, `--output` | Output file path | `photos_report.csv` |
 | `-f`, `--format` | Output format: `csv` or `json` | `csv` |
 
 ## Output
