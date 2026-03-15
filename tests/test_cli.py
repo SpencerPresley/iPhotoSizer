@@ -2,7 +2,6 @@
 
 import csv
 import json
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -134,9 +133,9 @@ class TestValidateOutputPath:
     def test_insufficient_disk_space_message(self, tmp_path: Path, capsys):
         output = tmp_path / "report.csv"
         fake_usage = SimpleNamespace(free=1024)
-        with patch("iphoto_sizer.cli.shutil.disk_usage", return_value=fake_usage):
-            with pytest.raises(SystemExit):
-                validate_output_path(str(output))
+        with patch("iphoto_sizer.cli.shutil.disk_usage", return_value=fake_usage), \
+             pytest.raises(SystemExit):
+            validate_output_path(str(output))
         stderr = capsys.readouterr().err
         assert "Insufficient disk space" in stderr
 
@@ -195,13 +194,13 @@ class TestPrintSummary:
 
 def _fake_photo(**overrides: object) -> SimpleNamespace:
     """Create a fake PhotoInfo-like object for pipeline tests."""
-    from datetime import datetime
+    from datetime import UTC, datetime
 
     defaults = {
         "original_filename": "IMG_001.jpg",
         "original_filesize": 5_000_000,
         "ismovie": False,
-        "date": datetime(2024, 6, 15, 14, 30, 0),
+        "date": datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC),
         "uuid": "ABC-123",
         "ismissing": False,
     }
@@ -307,6 +306,39 @@ class TestRun:
 
         stderr = capsys.readouterr().err
         assert "JSON written to" in stderr
+
+
+class TestWebFlag:
+    def test_web_flag_defaults_to_false(self):
+        parser = build_arg_parser()
+        args = parser.parse_args([])
+        assert args.web is False
+
+    def test_web_flag_set(self):
+        parser = build_arg_parser()
+        args = parser.parse_args(["--web"])
+        assert args.web is True
+
+    def test_web_mode_calls_serve_web(self):
+        """When --web is passed, _run should call serve_web instead of the export pipeline."""
+        with patch("iphoto_sizer.cli.build_arg_parser") as mock_parser:
+            mock_parser.return_value.parse_args.return_value = (
+                build_arg_parser().parse_args(["--web"])
+            )
+            with patch("iphoto_sizer.cli._start_web") as mock_web:
+                _run()
+                mock_web.assert_called_once()
+
+    def test_web_mode_graceful_error_without_flask(self):
+        """When Flask is not installed, print install instructions and exit."""
+        with patch("iphoto_sizer.cli.build_arg_parser") as mock_parser:
+            mock_parser.return_value.parse_args.return_value = (
+                build_arg_parser().parse_args(["--web"])
+            )
+            with patch("iphoto_sizer.cli._start_web", side_effect=ImportError):
+                with pytest.raises(SystemExit) as exc_info:
+                    _run()
+                assert exc_info.value.code == 1
 
 
 class TestMain:

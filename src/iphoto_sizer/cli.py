@@ -78,6 +78,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="csv",
         help="Output format (default: csv)",
     )
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        default=False,
+        help="Launch the web UI instead of exporting to a file",
+    )
     return parser
 
 
@@ -166,6 +172,13 @@ def print_summary(records: list[PhotoRecord], top_n: int = 10) -> None:
         )
 
 
+def _start_web() -> None:
+    """Import and start the web UI. Raises ImportError if Flask is not installed."""
+    from iphoto_sizer.web import serve_web  # noqa: PLC0415
+
+    serve_web()
+
+
 def main() -> None:
     """Run the full export pipeline: load, extract, filter, sort, write, summarize."""
     try:
@@ -182,6 +195,18 @@ def _run() -> None:
     if args.min_size_mb < 0:
         print("Error: --min-size-mb cannot be negative", file=sys.stderr)
         sys.exit(1)
+
+    if args.web:
+        try:
+            _start_web()
+        except ImportError:
+            print(
+                "The --web flag requires the [web] extra.\n"
+                "Install it with: pip install iphoto-sizer[web]",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return
 
     output_path = validate_output_path(args.output)
     db = load_photos_db()
