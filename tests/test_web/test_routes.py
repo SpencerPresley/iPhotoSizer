@@ -1,26 +1,12 @@
 """Tests for iphoto_sizer.web routes."""
 
-from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from iphoto_sizer.web import create_app
-
-
-def _fake_photo(**overrides: object) -> SimpleNamespace:
-    defaults = {
-        "original_filename": "IMG_001.jpg",
-        "original_filesize": 5_000_000,
-        "ismovie": False,
-        "date": datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC),
-        "uuid": "ABC-123",
-        "ismissing": False,
-    }
-    defaults.update(overrides)
-    return SimpleNamespace(**defaults)
+from tests.conftest import make_fake_photo, make_record_dict
 
 
 class TestAppFactory:
@@ -88,7 +74,7 @@ class TestScanEndpoint:
         app = create_app()
         client = app.test_client()
         mock_db = MagicMock()
-        mock_db.photos.return_value = [_fake_photo()]
+        mock_db.photos.return_value = [make_fake_photo()]
         with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
             response = client.post("/scan", json={})
         assert response.status_code == 200
@@ -102,8 +88,8 @@ class TestScanEndpoint:
         client = app.test_client()
         mock_db = MagicMock()
         mock_db.photos.return_value = [
-            _fake_photo(original_filesize=100),
-            _fake_photo(original_filename="big.mov", original_filesize=500_000_000),
+            make_fake_photo(original_filesize=100),
+            make_fake_photo(original_filename="big.mov", original_filesize=500_000_000),
         ]
         with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
             response = client.post("/scan", json={"min_size_mb": 100})
@@ -115,8 +101,8 @@ class TestScanEndpoint:
         client = app.test_client()
         mock_db = MagicMock()
         mock_db.photos.return_value = [
-            _fake_photo(original_filename="small.jpg", original_filesize=100),
-            _fake_photo(original_filename="big.jpg", original_filesize=999_999),
+            make_fake_photo(original_filename="small.jpg", original_filesize=100),
+            make_fake_photo(original_filename="big.jpg", original_filesize=999_999),
         ]
         with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
             response = client.post("/scan", json={})
@@ -128,8 +114,8 @@ class TestScanEndpoint:
         client = app.test_client()
         mock_db = MagicMock()
         mock_db.photos.return_value = [
-            _fake_photo(ismovie=False, original_filesize=100),
-            _fake_photo(ismovie=True, original_filesize=200),
+            make_fake_photo(ismovie=False, original_filesize=100),
+            make_fake_photo(ismovie=True, original_filesize=200),
         ]
         with patch("iphoto_sizer.web.routes.load_photos_db", return_value=mock_db):
             response = client.post("/scan", json={})
@@ -147,25 +133,12 @@ class TestScanEndpoint:
         assert response.status_code == 500
 
 
-def _fake_photo_record_dict() -> dict[str, object]:
-    return {
-        "filename": "IMG_001.jpg",
-        "extension": "jpg",
-        "media_type": "photo",
-        "size_bytes": 1024,
-        "size": "0.00 MB",
-        "creation_date": "2024-01-01 12:00:00",
-        "uuid": "abc-123",
-        "icloud_status": "local",
-    }
-
-
 class TestExportEndpoint:
     def test_export_csv(self, tmp_path: Path) -> None:
         app = create_app()
         app.config["EXPORT_DIR"] = str(tmp_path)
         client = app.test_client()
-        records = [_fake_photo_record_dict()]
+        records = [make_record_dict()]
         response = client.post("/export", json={
             "records": records,
             "format": "csv",
@@ -180,7 +153,7 @@ class TestExportEndpoint:
         app = create_app()
         app.config["EXPORT_DIR"] = str(tmp_path)
         client = app.test_client()
-        records = [_fake_photo_record_dict()]
+        records = [make_record_dict()]
         response = client.post("/export", json={
             "records": records,
             "format": "json",
@@ -193,7 +166,7 @@ class TestExportEndpoint:
         app = create_app()
         app.config["EXPORT_DIR"] = str(tmp_path)
         client = app.test_client()
-        records = [_fake_photo_record_dict()]
+        records = [make_record_dict()]
         response = client.post("/export", json={
             "records": records,
             "format": "all",
@@ -229,7 +202,7 @@ class TestExportEndpoint:
         app.config["EXPORT_DIR"] = str(tmp_path)
         client = app.test_client()
         response = client.post("/export", json={
-            "records": [_fake_photo_record_dict()],
+            "records": [make_record_dict()],
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -286,8 +259,8 @@ class TestFullPipeline:
 
         mock_db = MagicMock()
         mock_db.photos.return_value = [
-            _fake_photo(original_filename="big.mov", original_filesize=1_000_000, ismovie=True),
-            _fake_photo(original_filename="small.jpg", original_filesize=100),
+            make_fake_photo(original_filename="big.mov", original_filesize=1_000_000, ismovie=True),
+            make_fake_photo(original_filename="small.jpg", original_filesize=100),
         ]
 
         # Step 1: Scan
@@ -316,7 +289,7 @@ class TestFullPipeline:
 
         # Records loaded client-side (not from /scan), sent directly to /export
         client_records = [
-            _fake_photo_record_dict(),
+            make_record_dict(),
             {
                 "filename": "video.mov",
                 "extension": "mov",

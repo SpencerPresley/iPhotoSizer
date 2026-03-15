@@ -4,24 +4,9 @@ import csv
 import json
 from pathlib import Path
 
-from iphoto_sizer.models import CSV_COLUMNS, PhotoRecord
+from iphoto_sizer.models import CSV_COLUMNS
 from iphoto_sizer.writers import write_csv, write_json
-
-
-def _make_record(**overrides: object) -> PhotoRecord:
-    """Create a PhotoRecord with sensible defaults, overriding specific fields."""
-    defaults = {
-        "filename": "IMG_001.jpg",
-        "extension": "jpg",
-        "media_type": "photo",
-        "size_bytes": 1024,
-        "size": "0.00 MB",
-        "creation_date": "2024-01-01 12:00:00",
-        "uuid": "abc-123",
-        "icloud_status": "local",
-    }
-    defaults.update(overrides)
-    return PhotoRecord(**defaults)
+from tests.conftest import make_record
 
 
 class TestWriteCSV:
@@ -36,8 +21,8 @@ class TestWriteCSV:
 
     def test_writes_records(self, tmp_path: Path):
         records = [
-            _make_record(filename="a.jpg", size_bytes=200),
-            _make_record(filename="b.mov", size_bytes=100),
+            make_record(filename="a.jpg", size_bytes=200),
+            make_record(filename="b.mov", size_bytes=100),
         ]
         output = tmp_path / "test.csv"
         write_csv(records, output)
@@ -62,7 +47,7 @@ class TestWriteCSV:
 
 class TestWriteJSON:
     def test_writes_valid_json(self, tmp_path: Path):
-        records = [_make_record(filename="a.jpg")]
+        records = [make_record(filename="a.jpg")]
         output = tmp_path / "test.json"
         write_json(records, output)
 
@@ -79,7 +64,7 @@ class TestWriteJSON:
         assert data == []
 
     def test_all_fields_present(self, tmp_path: Path):
-        records = [_make_record()]
+        records = [make_record()]
         output = tmp_path / "test.json"
         write_json(records, output)
 
@@ -87,7 +72,7 @@ class TestWriteJSON:
         assert set(data[0].keys()) == set(CSV_COLUMNS)
 
     def test_json_is_indented(self, tmp_path: Path):
-        records = [_make_record()]
+        records = [make_record()]
         output = tmp_path / "test.json"
         write_json(records, output)
 
