@@ -203,7 +203,7 @@ def _run() -> None:
         except ImportError:
             print(
                 "The --web flag requires the [web] extra.\n"
-                "Install it with: pip install iphoto-sizer[web]",
+                'Install it with: pip install "iphoto-sizer[web]"',
                 file=sys.stderr,
             )
             sys.exit(_EXIT_CODE_ERROR)

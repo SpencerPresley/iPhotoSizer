@@ -27,14 +27,14 @@ pip install iphoto-sizer
 With the optional web UI:
 
 ```bash
-pip install iphoto-sizer[web]
+pip install "iphoto-sizer[web]"
 ```
 
 Or with uv:
 
 ```bash
 uv tool install iphoto-sizer        # CLI only
-uv tool install iphoto-sizer[web]   # CLI + web UI
+uv tool install "iphoto-sizer[web]"   # CLI + web UI
 ```
 
 Or from source:
