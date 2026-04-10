@@ -1,10 +1,9 @@
 """Route handlers for the web UI."""
 
-import importlib.util
 from pathlib import Path
-from types import ModuleType
 from typing import Any, cast
 
+import photoscript
 from flask import Blueprint, current_app, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
@@ -18,13 +17,6 @@ from iphoto_sizer.models import (
     format_bytes,
 )
 from iphoto_sizer.writers import FORMAT_WRITERS
-
-_PHOTOSCRIPT_AVAILABLE: bool = importlib.util.find_spec("photoscript") is not None
-_photoscript: ModuleType | None = None
-if _PHOTOSCRIPT_AVAILABLE:
-    import photoscript
-
-    _photoscript = photoscript
 
 bp = Blueprint("web", __name__)
 
@@ -103,20 +95,14 @@ def export() -> ResponseReturnValue:
 
 
 def _open_in_photos(uuid: str) -> None:
-    """Open a photo in Photos.app via photoscript. Raises if it fails."""
-    if _photoscript is None:
-        msg = "photoscript is not installed"
-        raise RuntimeError(msg)
-    photo = _photoscript.Photo(uuid)
+    """Open a photo in Photos.app via photoscript."""
+    photo = photoscript.Photo(uuid)
     photo.spotlight()
 
 
 @bp.route("/open/<uuid>", methods=["POST"])
 def open_photo(uuid: str) -> ResponseReturnValue:
     """Open a photo in Photos.app."""
-    if not _PHOTOSCRIPT_AVAILABLE:
-        return jsonify({"success": False, "error": "photoscript not available"})
-
     try:
         _open_in_photos(uuid)
     except Exception as e:

@@ -409,7 +409,7 @@ wheels = [
 
 [[package]]
 name = "iphoto-sizer"
-version = "0.1.3"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "osxphotos" },

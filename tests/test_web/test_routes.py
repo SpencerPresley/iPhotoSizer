@@ -240,15 +240,6 @@ class TestOpenEndpoint:
         assert data["success"] is False
         assert "error" in data
 
-    def test_open_photo_no_photoscript(self) -> None:
-        app = create_app()
-        client = app.test_client()
-        with patch("iphoto_sizer.web.routes._PHOTOSCRIPT_AVAILABLE", False):
-            response = client.post("/open/ABC-123-DEF")
-        data = response.get_json()
-        assert data["success"] is False
-        assert "photoscript" in data["error"].lower()
-
 
 class TestFullPipeline:
     def test_scan_then_export(self, tmp_path: Path) -> None:
