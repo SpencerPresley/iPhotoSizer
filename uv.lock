@@ -409,7 +409,7 @@ wheels = [
 
 [[package]]
 name = "iphoto-sizer"
-version = "0.1.2"
+version = "0.1.3"
 source = { editable = "." }
 dependencies = [
     { name = "osxphotos" },
@@ -419,6 +419,7 @@ dependencies = [
 [package.optional-dependencies]
 web = [
     { name = "flask" },
+    { name = "photoscript" },
 ]
 
 [package.dev-dependencies]
@@ -433,6 +434,7 @@ dev = [
 requires-dist = [
     { name = "flask", marker = "extra == 'web'", specifier = ">=3.0" },
     { name = "osxphotos", specifier = "~=0.75.6" },
+    { name = "photoscript", marker = "extra == 'web'", specifier = ">=0.5.3" },
     { name = "pydantic", specifier = "~=2.12.5" },
 ]
 provides-extras = ["web"]
@@ -777,12 +779,12 @@ name = "photoscript"
 version = "0.5.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "py-applescript", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-applescriptkit", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-applescriptobjc", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
-    { name = "tenacity", marker = "sys_platform == 'darwin'" },
+    { name = "py-applescript" },
+    { name = "pyobjc-core" },
+    { name = "pyobjc-framework-applescriptkit" },
+    { name = "pyobjc-framework-applescriptobjc" },
+    { name = "pyobjc-framework-cocoa" },
+    { name = "tenacity" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/b8/55ef5e2285c8effe52d48ca053672b4a25bdc5c96e4666d187fa7deb95d3/photoscript-0.5.3.tar.gz", hash = "sha256:4d54bb99866f2450903be9f4996f311097d816e26dfae55c541f2ef58fc745dd", size = 29580, upload-time = "2025-12-22T12:52:39.951Z" }
 wheels = [
@@ -867,9 +869,9 @@ name = "py-applescript"
 version = "1.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-applescriptkit", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-applescriptobjc", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-core" },
+    { name = "pyobjc-framework-applescriptkit" },
+    { name = "pyobjc-framework-applescriptobjc" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b2/13/781639401dd0e6fc11b2b6d4999ec8e951b50df2600eebee8e929b009da1/py-applescript-1.0.3.tar.gz", hash = "sha256:fa22c955fc25b3d24e03e66825b36a721897ec0d9b6ce185a4d177e2d1ecfa6b", size = 24925, upload-time = "2022-01-23T05:39:23.427Z" }
 wheels = [
@@ -1021,8 +1023,8 @@ name = "pyobjc-framework-applescriptkit"
 version = "9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-core" },
+    { name = "pyobjc-framework-cocoa" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/62/e2/1d566374e942c76aeb01754ed63d6132d85ebbe32504809e9a102ec6cec3/pyobjc-framework-AppleScriptKit-9.2.tar.gz", hash = "sha256:4215952cc18b810ca314a59f1a0b9ddbe5d9c7f2d4cc6a866cad570ea96b7496", size = 11483, upload-time = "2023-06-07T08:38:10.456Z" }
 wheels = [
@@ -1034,8 +1036,8 @@ name = "pyobjc-framework-applescriptobjc"
 version = "9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-core" },
+    { name = "pyobjc-framework-cocoa" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3c/c0/ab3922a01a6649a56c8f1fddbf7036a7212ee77da880501278e9390e8675/pyobjc-framework-AppleScriptObjC-9.2.tar.gz", hash = "sha256:f6216bf110072e70938e1efa1a058d48452a9d9251911bee26102bad4091a051", size = 11502, upload-time = "2023-06-07T08:38:15.577Z" }
 wheels = [
@@ -1065,7 +1067,7 @@ name = "pyobjc-framework-cocoa"
 version = "9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-core" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/38/91/c54fdffda6d7cfad67ff617f19001163658d50bc72376d1584e691cf4895/pyobjc-framework-Cocoa-9.2.tar.gz", hash = "sha256:efd78080872d8c8de6c2b97e0e4eac99d6203a5d1637aa135d071d464eb2db53", size = 6170134, upload-time = "2023-06-07T09:14:13.129Z" }
 wheels = [
