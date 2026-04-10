@@ -21,6 +21,9 @@ web = ["flask>=3.0", "photoscript>=0.5.3"]
 [project.scripts]
 iphoto-sizer = "iphoto_sizer.cli:main"
 
+[tool.uv.scripts]
+release = "bash -c 'rm -rf dist && uv build && uv publish'"
+
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]
 build-backend = "uv_build"
